@@ -7,6 +7,8 @@ Created on Thu Jun 13 18:26:21 2024
 
 #%%
 
+#IMPORTAÇÃO DOS PACOTES NECESSÁRIOS
+
 # Import necessary libraries for data analysis and visualization
 import numpy as np
 import pandas as pd
@@ -29,20 +31,24 @@ init_notebook_mode(connected=True)
 
 #%%
 
-# dataframe from transparency
-df_global_results_trends = pd.read_csv('/kaggle/input/global-corruption-index-transparency-perceptions/CPI2023-Global-Results-Trends.csv', delimiter='|', encoding='utf-8')
+#IMPORTAÇÃO DOS DADOS
 
-df_timeseries = pd.read_excel('/kaggle/input/global-corruption-index-transparency-perceptions/CPI2023-Global-Results-Trends.xlsx', sheet_name='CPI Timeseries 2012 - 2023', skiprows=3)
+# dataframe from transparency
+df_global_results_trends = pd.read_csv('C:/Users/derek/OneDrive/Documentos/pasta_analise_de_corrupcao_global_video/CPI2023-Global-Results-Trends.csv', delimiter='|', encoding='utf-8')
+
+df_timeseries = pd.read_excel('C:/Users/derek/OneDrive/Documentos/pasta_analise_de_corrupcao_global_video/CPI2023-Global-Results-Trends.xlsx', sheet_name='CPI Timeseries 2012 - 2023', skiprows=3)
 
 #%%
 
-# Define a custom color scale for the choropleth map
+#DEFINIÇÃO DA MAPA 
+
+# Definição da grade de cor para a mapa (vermelho para pontuação baixa e verde para pontuação alta)
 custom_scale = [
     (0, 'rgb(255,0,0)'),  # Red for low scores
     (1, 'rgb(0,255,0)')   # Green for high scores
 ]
 
-# Create a choropleth map to visualize the corruption scores by country
+# Criação da mapa cloropleth da grade de pontuação CPI por país
 fig = px.choropleth(
     df_global_results_trends, 
     locations="ISO3",
@@ -60,6 +66,8 @@ fig.show()
 
 #%%
 
+#CRIAÇÃO DE UMA HISTOGRAMA DA DISTRIBUIÇÃO DA FREQUÊNCIA DE PONTUAÇÃO CPI PAR 2023
+
 plt.figure(figsize=(12, 6))
 sns.histplot(df_global_results_trends['CPI score 2023'], bins=20, kde=True, color='blue')
 plt.title('Distribution of CPI Scores for 2023')
@@ -68,6 +76,8 @@ plt.ylabel('Frequency')
 plt.show()
 
 #%%
+
+#GRÁFICO - 10 PAÍSES COM A PONTUAÇÃO CPI MAIORES
 
 top_10 = df_global_results_trends.nlargest(10, 'CPI score 2023')
 
@@ -81,20 +91,34 @@ plt.show()
 
 #%%
 
-# Calculate correlation coefficients between CPI score and other indices
+#GRÁFICO - 10 PAÍSES COM A PONTUAÇÃO CPI MENORES
+
+bottom_10 = df_global_results_trends.nsmallest(10, 'CPI score 2023')
+
+plt.figure(figsize=(12, 6))
+sns.barplot(x='CPI score 2023', y='Country / Territory', data=bottom_10, palette='magma')
+plt.title('Bottom 10 Countries with Lowest CPI Scores in 2023')
+plt.xlabel('CPI Score')
+plt.ylabel('Country')
+plt.show()
+
+#%%
+
+
+
+# CALCULO DA CORRELAÇÃO ENTRE A CPI E INDICES DE ESTABLILIDADE GOVERNAMENTAL (O WORLD BANK CPIA; E O BERTELSMANN FOUNDATION SUSTAINABLE GOVERNANCE INDEX)
 corr_cpi_cpiia = df_global_results_trends['CPI score 2023'].corr(df_global_results_trends['World Bank CPIA'])
 corr_cpi_sgi = df_global_results_trends['CPI score 2023'].corr(df_global_results_trends['Bertelsmann Foundation Sustainable Governance Index'])
 
 
+# GRAFÍCO DE DISTRIBUIÇÃO COM FUNÇÃO DE CORRELAÇÃO ENTRE CPI E CPIA (REGRESSÃO LINEAR)
 plt.figure(figsize=(14, 6))
-
-# CPI score vs World Bank CPIA
 plt.subplot(1, 2, 1)
 sns.scatterplot(
     x='CPI score 2023', y='World Bank CPIA', 
     data=df_global_results_trends, s=100, color='blue', alpha=0.6
 )
-sns.regplot(
+sns.regplot( #syntax de criaçaõ de função de regressão linear, que inclui a margem de erro
     x='CPI score 2023', y='World Bank CPIA', 
     data=df_global_results_trends, scatter=False, color='blue'
 )
@@ -102,13 +126,15 @@ plt.title(f'CPI score vs World Bank CPIA (Correlation: {corr_cpi_cpiia:.2f})')
 plt.xlabel('CPI score 2023')
 plt.ylabel('World Bank CPIA')
 
-# CPI score vs Bertelsmann Foundation Sustainable Governance Index
+plt.figure(figsize=(14, 6))
+
+# GRAFÍCO DE DISTRIBUIÇÃO COM FUNÇÃO DE CORRELAÇÃO ENTRE CPI E BFSGI (REGRESSÃO LINEAR)
 plt.subplot(1, 2, 2)
 sns.scatterplot(
     x='CPI score 2023', y='Bertelsmann Foundation Sustainable Governance Index', 
     data=df_global_results_trends, s=100, color='green', alpha=0.6
 )
-sns.regplot(
+sns.regplot( #syntax de criaçaõ de função de regressão linear, que inclui a margem de erro
     x='CPI score 2023', y='Bertelsmann Foundation Sustainable Governance Index', 
     data=df_global_results_trends, scatter=False, color='green'
 )
@@ -121,18 +147,19 @@ plt.show()
 
 #%%
 
-#Corrução e Governança
+#CALCULO DAS CORRELAÇÕES ENTRE CORRUPÇÃO E LIBERDADE/DEMOCRACIA
 
 # Select relevant columns for analysis
 columns_of_interest = ['CPI score 2023', 'Varieties of Democracy Project', 'Freedom House Nations in Transit']
 df_subset = df_global_results_trends[columns_of_interest]
 
-# Calculate the correlation matrix
+
+# Criação de uma mapa de calor (matriz de correlações)
 correlation_matrix = df_subset.corr()
 
 plt.figure(figsize=(10, 8))
 
-# Create a heatmap to visualize the correlation matrix with larger annotations
+# montagem do mapa de calor das coeficientes corrupção x liberdades
 sns.heatmap(
     correlation_matrix, annot=True, cmap='coolwarm', fmt=".2f",
     annot_kws={"size": 14}, linewidths=.5
@@ -144,26 +171,28 @@ plt.yticks(rotation=0, fontsize=12)
 # Display the plot
 plt.show()
 
+#MOSTRA DQUE A CORRELAÇÃO ENTRE CORRUPÇÃO E LIBERDADES / DEMOCRACIA SÃO QUASE 1 AO 1
+
 #%%
 
-#Tendências de pontuação CPI
+#AS TENDÊNCIAS DE PONTUAÇÃO CPI 
 
-# CPI Score Trends (2012-2023) with better visualization without outliers
-# Filter out the data to include only the relevant columns for the trends
+# Preparação dos dados para mostrar so a pontuação do CPI para anos fiferentes
 df_trends_filtered = df_timeseries[['Country / Territory', 'ISO3', 'Region'] + [col for col in df_timeseries.columns if 'CPI score' in col]]
 
-# Melt the dataframe for easier plotting
+# 'melting' os dados (compactando de uma forma melhor) para facilitar a plotagem
 df_trends_melted = df_trends_filtered.melt(id_vars=['Country / Territory', 'ISO3', 'Region'], 
                                            var_name='Year', 
                                            value_name='CPI Score')
 
-# Extract the year from the column names
+# tirando os anos a partir das nomes das colunas, para usar como rótulos
 df_trends_melted['Year'] = df_trends_melted['Year'].str.extract('(\d{4})').astype(int)
 
-# Filter the data to remove outliers and only include relevant countries for trend analysis
+# filtrando os dados (tirando os outliers)
 selected_countries = ['Denmark', 'Finland', 'New Zealand', 'Norway', 'Singapore', 'Somalia', 'Syria', 'South Sudan']
 df_trends_selected = df_trends_melted[df_trends_melted['Country / Territory'].isin(selected_countries)]
 
+#plotágem do gráfico
 plt.figure(figsize=(14, 8))
 sns.lineplot(data=df_trends_selected, x='Year', y='CPI Score', hue='Country / Territory', marker='o')
 
@@ -176,7 +205,7 @@ plt.show()
 
 #%%
 
-#Comparação das puntuações
+#Comparação das puntuações médias entre indíces diferentes de corrupção 
 
 sources_cols = ['African Development Bank CPIA', 'Bertelsmann Foundation Sustainable Governance Index',
                 'Bertelsmann Foundation Transformation Index', 'Economist Intelligence Unit Country Ratings',
@@ -196,3 +225,4 @@ plt.ylabel('Source')
 plt.show()
 
 #%%
+
