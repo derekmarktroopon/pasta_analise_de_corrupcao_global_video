@@ -31,6 +31,7 @@ init_notebook_mode(connected=True)
 
 #Usado para criar o modelo de regressão linear multivariável
 import statsmodels.api as sm
+import statsmodels.formula.api as smf
 
 #%%
 
@@ -66,6 +67,7 @@ fig.update_layout(title='Corruption score by countries in 2023')
 
 # Display the plot
 fig.show()
+
 
 #%%
 
@@ -229,14 +231,6 @@ plt.show()
 
 #%%
 
-#ANÁLISE DAS RELAÇÕES ENTRE AS COEFICIENTES E A ÍNDICE CPI
-
-reg = smf.ols(formula='lnwage ~ education + age + I(age**2)', data=df_global_results_trends)
-results = reg.fit()
-print(results.summary())
-
-#%%
-
 #MODELO DE ESTIMATÍVA CPI - REGRESSÃO LINEAR MULTIVARIÁVEL - LIN-LIN
 
 #Criando uma tabéla com as variáveis de interesse - (objetívo do modelo: ver compo as níveis de estabilidade governamental e liberdade podem ser usadas para estimar a corrupção de uma país)
@@ -254,10 +248,10 @@ X_cpi_estimation = df_subset_imputed[['World Bank CPIA', 'Bertelsmann Foundation
                        'Varieties of Democracy Project', 'Freedom House Nations in Transit']]
 
 # Add a constant to the independent variables matrix for the intercept
-X = sm.add_constant(X)
+X_cpi_estimation = sm.add_constant(X_cpi_estimation)
 
 # Fit the linear regression model
-model = sm.OLS(Y, X).fit()
+model = sm.OLS(Y_cpi_estimation, X_cpi_estimation).fit()
 
 # Print the model summary
 print(model.summary())
@@ -351,7 +345,7 @@ print(model_log_lin.summary())
 #PLOTANDO O GRÁFICO DA ESTIMATÍVA DAS NOTAS CPI X VALORES REAIS - MODELO LIN-LIN
 
 # Generate predicted values from the lin-lin model
-df_subset_imputed['Predicted CPI score 2023'] = model.predict(X)
+df_subset_imputed['Predicted CPI score 2023'] = model.predict(X_cpi_estimation)
 
 # Plotting the actual vs predicted values
 plt.figure(figsize=(10, 6))
@@ -382,3 +376,5 @@ plt.title('Actual vs Predicted CPI Score 2023 (Log-Lin Model)')
 plt.xlabel('Actual CPI Score 2023')
 plt.ylabel('Predicted CPI Score 2023')
 plt.show()
+
+#Pode ver que o modelo LOG-LIN tem um ajuste gráfico um pouco melhor
