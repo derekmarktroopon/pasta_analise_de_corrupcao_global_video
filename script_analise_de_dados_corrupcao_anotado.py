@@ -237,18 +237,18 @@ print(results.summary())
 
 #%%
 
-#MODELO DE ESTIMATÍVA CPI - REGRESSÃO LINEAR MULTIVARIÁVEL
+#MODELO DE ESTIMATÍVA CPI - REGRESSÃO LINEAR MULTIVARIÁVEL - LIN-LIN
 
 #Criando uma tabéla com as variáveis de interesse - (objetívo do modelo: ver compo as níveis de estabilidade governamental e liberdade podem ser usadas para estimar a corrupção de uma país)
 columns_of_interest = ['CPI score 2023', 'World Bank CPIA', 'Bertelsmann Foundation Sustainable Governance Index', 
                        'Varieties of Democracy Project', 'Freedom House Nations in Transit']
 df_subset = df_global_results_trends[columns_of_interest]
 
-# Handle missing values if any
+# Tira valores faltantes
 imputer = SimpleImputer(strategy='mean')
 df_subset_imputed = pd.DataFrame(imputer.fit_transform(df_subset), columns=columns_of_interest)
 
-# Define the dependent variable (Y) and independent variables (X)
+# Definir a variável dependente (Y) e as variáveis independentes (X)
 Y_cpi_estimation = df_subset_imputed['CPI score 2023']
 X_cpi_estimation = df_subset_imputed[['World Bank CPIA', 'Bertelsmann Foundation Sustainable Governance Index', 
                        'Varieties of Democracy Project', 'Freedom House Nations in Transit']]
@@ -262,15 +262,52 @@ model = sm.OLS(Y, X).fit()
 # Print the model summary
 print(model.summary())
 
+#MODELO DE ESTIMATÍVA CPI - REGRESSÃO LINEAR MULTIVARIÁVEL - LOG-LIN
+
+#Criando uma tabéla com as variáveis de interesse - (objetívo do modelo: ver compo as níveis de estabilidade governamental e liberdade podem ser usadas para estimar a corrupção de uma país)
+columns_of_interest = ['CPI score 2023', 'World Bank CPIA', 'Bertelsmann Foundation Sustainable Governance Index', 
+                       'Varieties of Democracy Project', 'Freedom House Nations in Transit']
+df_subset = df_global_results_trends[columns_of_interest]
+
+# Tira valores faltantes
+imputer = SimpleImputer(strategy='mean')
+df_subset_imputed = pd.DataFrame(imputer.fit_transform(df_subset), columns=columns_of_interest)
+
+# Transformar a variável dependente por função LOG
+df_subset_imputed_log_lin = df_subset_imputed.copy()
+df_subset_imputed_log_lin['CPI score 2023'] = np.log(df_subset_imputed_log_lin['CPI score 2023'])
+
+# Definir a variável dependente (Y) e as variáveis independentes (X)
+Y_log_lin = df_subset_imputed_log_lin['CPI score 2023']
+X_log_lin = df_subset_imputed_log_lin[['World Bank CPIA', 'Bertelsmann Foundation Sustainable Governance Index', 
+                                       'Varieties of Democracy Project', 'Freedom House Nations in Transit']]
+
+# Add a constant to the independent variables matrix for the intercept
+X_log_lin = sm.add_constant(X_log_lin)
+
+# Fit the linear regression model
+model_log_lin = sm.OLS(Y_log_lin, X_log_lin).fit()
+
+# Print the model summary
+print(model_log_lin.summary())
+
 #ANÁLISE 
 
-#O R quadrado do modelo é de 0,837, significando que 83,7% da variação de corrupção de um país pode ser estimado pelo seu grau de liberdade/democracia e estabilidade governamental.
+#O R quadrado do modelo LIN-LIN é de 0,837, significando que 83,7% da variação de corrupção de um país pode ser estimado pelo seu grau de liberdade/democracia e estabilidade governamental.
+#O R quadrado do modelo LOG-LIN é de 0,840, significando que 84% da variação de corrupção de um país pode ser estimado pelo seu grau de liberdade/democracia e estabilidade governamental.
 
-#A nota F calculada é muito maior (224) do que a nota F tabelada (0,0000--[E-64]--106), isso significa que o modelo tem grande relevância estatística.
+#A nota F calculada do modelo LIN-LIN é muito maior (224) do que a nota F tabelada (0,0000--[E-64]--106), isso significa que o modelo tem grande relevância estatística.
+#A nota F calculada do modelo LOG-LIN é muito maior (230,1) do que a nota F tabelada (0,0000--[E-65]--149), isso significa que o modelo tem enorme relevância estatística.
+
+
+#A partir desses informações, podemos concluir que o modelo LOG-LIN é o mais adequado para a estimatíva do CPI de um país.
+
+
+#Com o modelo LIN-LIN:
 
 #O Variável independente com o maior relevância é a nota Var. of Democ. proj. (a nota da nível de Democracia num país).
 # Aqui podemos ver uma coeficiente de 0,7233, significando que cada nível de pontuação nesse indíce de democracia aumenta a pontuação da CPI por 0,7233.
-# Podemos ver que esse coeficiente é extremamente estatisticamente relevante, com um t valor calculado (23,5) muito superior ao valor t tabelado de 0.
+# Podemos ver que esse coeficiente é extremamente estatisticamente relevante, com um t valor calculado (23,5) muito superior ao valor t tabelado de 0.    
 
 #O segundo varável independente mais estatísticamente relevante nesse modelo é o BF Sustain. Gov. Index (a nota de governança sustentável num país).
 # Aqui podemos ver uma coeficiente de 0,3127, significando que cada nível de pontuação nesse indíce de sustentabilidade de governânça aumenta a pontuação da CPI por 0,3127.
@@ -284,3 +321,64 @@ print(model.summary())
 # Aqui podemos ver uma coeficiente baixa de 0,0584, significando que cada nível de pontuação nesse indíce de liberdade pessoal aumenta a pontuação da CPI por 0,0584.
 # Podemos ver que esse coeficiente não é muito estatisticamente relevante, com um t valor calculado (0,58) só um pouco superior ao valor t tabelado de 0,563, 
 # ainda que isso mostra que não é completamente irrelevante na cálculo da estimativa do CPI.
+
+#Com o modelo LOG-LIN:
+
+#O Variável independente com o maior relevância é a nota Var. of Democ. proj. (a nota da nível de Democracia num país).
+# Podemos ver que esse coeficiente é extremamente estatisticamente relevante, com um t valor calculado (23,195) muito superior ao valor t tabelado de 0.    
+
+#O segundo varável independente mais relevante nesse modelo é o World Bank CPIA. (a nota da integridade das instituições num país).
+# Podemos ver que esse coeficiente é muito estatisticamente relevante, com um t valor calculado (8,008) superior ao valor t tabelado de 0.
+
+#O terceiro varável independente mais estatísticamente relevante nesse modelo é o BF Sustain. Gov. Index (a nota de governança sustentável num país).
+# Podemos ver que esse coeficiente é relativamente estatisticamente relevante, com um t valor calculado (1,593) maior que o valor t tabelado de 0,113.
+
+#O varável independente final é aquele que possui o menor relevância nesse modelo, e é a nota dada pelo Freedom House Nations in Transit (mostrando os níveis de liberdade que pessoas possuem num país).
+# Podemos ver que esse coeficiente não é muito estatisticamente relevante, com um t valor calculado (0,599) só um pouco maior do que o valor t tabelado de 0,55, 
+# ainda que isso mostra que não é completamente irrelevante na cálculo da estimativa do CPI.
+
+#FORMULA DE ESTIMATÍVA DA NOTA CPI (CORRUPTION PERCEPTIONS INDEX) - MODELO LIN-LIN
+
+# 'Nota CPI' = -22,7053 + 0,7233*'Nota Var. of Democ. proj.' + 0,3127*'Nota BF Sustain. Gov. Index' + 0,3475*'Nota World Bank CPIA' + 0,0584*'Nota Freedom House'
+
+#FORMULA DE ESTIMATÍVA DA NOTA CPI (CORRUPTION PERCEPTIONS INDEX) - MODELO LIN-LIN
+
+# LOG('Nota CPI') = 2,2077 + 0,0172*'Nota Var. of Democ. proj.' + 0,0146*'Nota World Bank CPIA' + 0,0026*'Nota BF Sustain. Gov. Index'+ 0,0015*'Nota Freedom House'
+
+
+#%%
+
+#PLOTANDO O GRÁFICO DA ESTIMATÍVA DAS NOTAS CPI X VALORES REAIS - MODELO LIN-LIN
+
+# Generate predicted values from the lin-lin model
+df_subset_imputed['Predicted CPI score 2023'] = model.predict(X)
+
+# Plotting the actual vs predicted values
+plt.figure(figsize=(10, 6))
+sns.scatterplot(x='CPI score 2023', y='Predicted CPI score 2023', data=df_subset_imputed, color='blue', alpha=0.6)
+plt.plot([df_subset_imputed['CPI score 2023'].min(), df_subset_imputed['CPI score 2023'].max()],
+         [df_subset_imputed['CPI score 2023'].min(), df_subset_imputed['CPI score 2023'].max()],
+         color='red', linewidth=2)
+plt.title('Actual vs Predicted CPI Score 2023')
+plt.xlabel('Actual CPI Score 2023')
+plt.ylabel('Predicted CPI Score 2023')
+plt.show()
+
+#PLOTANDO O GRÁFICO DA ESTIMATÍVA DAS NOTAS CPI X VALORES REAIS - MODELO LOG-LIN
+
+# Generate predicted values on the log scale
+predicted_log = model_log_lin.predict(X_log_lin)
+
+# Transform the predicted values back to the original scale
+predicted = np.exp(predicted_log)
+
+# Plotting the actual vs predicted values
+plt.figure(figsize=(10, 6))
+sns.scatterplot(x=df_subset_imputed['CPI score 2023'], y=predicted, color='blue', alpha=0.6)
+plt.plot([df_subset_imputed['CPI score 2023'].min(), df_subset_imputed['CPI score 2023'].max()],
+         [df_subset_imputed['CPI score 2023'].min(), df_subset_imputed['CPI score 2023'].max()],
+         color='red', linewidth=2)
+plt.title('Actual vs Predicted CPI Score 2023 (Log-Lin Model)')
+plt.xlabel('Actual CPI Score 2023')
+plt.ylabel('Predicted CPI Score 2023')
+plt.show()
