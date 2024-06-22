@@ -29,6 +29,9 @@ from sklearn.preprocessing import LabelEncoder
 from plotly.offline import init_notebook_mode, iplot
 init_notebook_mode(connected=True)
 
+#Usado para criar o modelo de regressão linear multivariável
+import statsmodels.api as sm
+
 #%%
 
 #IMPORTAÇÃO DOS DADOS
@@ -226,3 +229,58 @@ plt.show()
 
 #%%
 
+#ANÁLISE DAS RELAÇÕES ENTRE AS COEFICIENTES E A ÍNDICE CPI
+
+reg = smf.ols(formula='lnwage ~ education + age + I(age**2)', data=df_global_results_trends)
+results = reg.fit()
+print(results.summary())
+
+#%%
+
+#MODELO DE ESTIMATÍVA CPI - REGRESSÃO LINEAR MULTIVARIÁVEL
+
+#Criando uma tabéla com as variáveis de interesse - (objetívo do modelo: ver compo as níveis de estabilidade governamental e liberdade podem ser usadas para estimar a corrupção de uma país)
+columns_of_interest = ['CPI score 2023', 'World Bank CPIA', 'Bertelsmann Foundation Sustainable Governance Index', 
+                       'Varieties of Democracy Project', 'Freedom House Nations in Transit']
+df_subset = df_global_results_trends[columns_of_interest]
+
+# Handle missing values if any
+imputer = SimpleImputer(strategy='mean')
+df_subset_imputed = pd.DataFrame(imputer.fit_transform(df_subset), columns=columns_of_interest)
+
+# Define the dependent variable (Y) and independent variables (X)
+Y_cpi_estimation = df_subset_imputed['CPI score 2023']
+X_cpi_estimation = df_subset_imputed[['World Bank CPIA', 'Bertelsmann Foundation Sustainable Governance Index', 
+                       'Varieties of Democracy Project', 'Freedom House Nations in Transit']]
+
+# Add a constant to the independent variables matrix for the intercept
+X = sm.add_constant(X)
+
+# Fit the linear regression model
+model = sm.OLS(Y, X).fit()
+
+# Print the model summary
+print(model.summary())
+
+#ANÁLISE 
+
+#O R quadrado do modelo é de 0,837, significando que 83,7% da variação de corrupção de um país pode ser estimado pelo seu grau de liberdade/democracia e estabilidade governamental.
+
+#A nota F calculada é muito maior (224) do que a nota F tabelada (0,0000--[E-64]--106), isso significa que o modelo tem grande relevância estatística.
+
+#O Variável independente com o maior relevância é a nota Var. of Democ. proj. (a nota da nível de Democracia num país).
+# Aqui podemos ver uma coeficiente de 0,7233, significando que cada nível de pontuação nesse indíce de democracia aumenta a pontuação da CPI por 0,7233.
+# Podemos ver que esse coeficiente é extremamente estatisticamente relevante, com um t valor calculado (23,5) muito superior ao valor t tabelado de 0.
+
+#O segundo varável independente mais estatísticamente relevante nesse modelo é o BF Sustain. Gov. Index (a nota de governança sustentável num país).
+# Aqui podemos ver uma coeficiente de 0,3127, significando que cada nível de pontuação nesse indíce de sustentabilidade de governânça aumenta a pontuação da CPI por 0,3127.
+# Podemos ver que esse coeficiente é muito estatisticamente relevante, com um t valor calculado (4,624) superior ao valor t tabelado de 0.
+
+#O terceiro varável independente mais relevante nesse modelo é o World Bank CPIA. (a nota da integridade das instituições num país).
+# Aqui podemos ver uma coeficiente de 0,3475, significando que cada nível de pontuação nesse indíce da integridade de instituições aumenta a pontuação da CPI por 0,3275.
+# Podemos ver que esse coeficiente é muito estatisticamente relevante, com um t valor calculado (4,609) superior ao valor t tabelado de 0.
+
+#O varável independente final é aquele que possui o menor relevância nesse modelo, e é a nota dada pelo Freedom House Nations in Transit (mostrando os níveis de liberdade que pessoas possuem num país).
+# Aqui podemos ver uma coeficiente baixa de 0,0584, significando que cada nível de pontuação nesse indíce de liberdade pessoal aumenta a pontuação da CPI por 0,0584.
+# Podemos ver que esse coeficiente não é muito estatisticamente relevante, com um t valor calculado (0,58) só um pouco superior ao valor t tabelado de 0,563, 
+# ainda que isso mostra que não é completamente irrelevante na cálculo da estimativa do CPI.
